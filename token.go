@@ -10,16 +10,64 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/geotrace/rest"
 )
+
+type ctxType byte // тип для сохранения данных в контексте запроса
+
+var ctxToken ctxType = 1 // ключ для сохранения токенов
+
+var (
+	tokenType       = "sub"    // ключ токена, используемый для указания типа
+	tokenTypeUser   = "user"   // токен с авторизацией пользователя
+	tokenTypeDevice = "device" // токен авторизации устройства
+)
+
+// GetToken возвращает содержимое токена из контекста запроса.
+func GetToken(c *rest.Context) map[string]interface{} {
+	return c.Data(ctxToken).(map[string]interface{})
+}
+
+// Token проверяет токен, считывая его из заголовка. В случае неверного токена возвращает ошибку,
+// что запрос не авторизован. Так же проверяет, что тип токена соответствует указанному в
+// параметрах, в противном случае тоже будет ошибка. Сам токен сохраняется в контексте запроса.
+func (s *Store) Token(h rest.Handler, allowSubs ...string) rest.Handler {
+	return func(c *rest.Context) {
+		token, err := s.tokens.ParseRequest(c.Request) // читаем токен из заголовка
+		if err == jwt.ErrNoTokenInRequest {            // нет токена
+			c.SetHeader("WWW-Authenticate", fmt.Sprintf("Bearer realm=%q", Realm))
+			c.Status(http.StatusUnauthorized).Send(err)
+			return
+		}
+		if err != nil { // токен не валиден
+			c.Status(http.StatusForbidden).Send(err)
+			return
+		}
+		if len(allowSubs) > 0 { // проверяем тип токена на допустимость
+			tokenSub := token[tokenType]
+			var allow bool
+			for _, sub := range allowSubs {
+				if tokenSub == sub {
+					allow = true
+					break
+				}
+			}
+			if !allow { // токен не подходит под допустимый тип
+				c.Status(http.StatusForbidden).Send("unauthorized token subject")
+				return
+			}
+		}
+		c.SetData(ctxToken, token) // сохраняем токен в контексте запроса
+		h(c)                       // вызываем основной обработчик запроса
+	}
+}
 
 // AccessTokenParamName описывает название параметра с токеном в запросе, если токен передается
 // не в заголовке. Если в качестве значения задать пустую строку, то система перестанет
 // поддерживать возможность передачи токена в виде параметра.
 var AccessTokenParamName = "token"
 
-var (
-	cryptoKeyLength = 1 << 8
-)
+const cryptoKeyLength = 1 << 8
 
 // TokenEngine описывает класс для работы с токенами в формате JSON Web Token.
 type TokenEngine struct {

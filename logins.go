@@ -47,10 +47,10 @@ func (s *Store) UserLogin(login, password string) (string, error) {
 		return "", ErrBadPassword
 	}
 	return s.tokens.Token(rest.JSON{
-		"type":  "user",
-		"id":    user.Login,
-		"group": user.GroupID,
-		"name":  user.Name,
+		tokenType: tokenTypeUser,
+		"id":      user.Login,
+		"group":   user.GroupID,
+		"name":    user.Name,
 	})
 }
 
@@ -65,9 +65,9 @@ func (s *Store) DeviceLogin(login, password string) (string, error) {
 		return "", ErrBadPassword
 	}
 	return s.tokens.Token(rest.JSON{
-		"type":  "device",
-		"id":    device.ID,
-		"group": device.GroupID,
-		"name":  device.Name,
+		tokenType: tokenTypeDevice,
+		"id":      device.ID,
+		"group":   device.GroupID,
+		"name":    device.Name,
 	})
 }
