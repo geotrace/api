@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rand"
 	"flag"
 	"net/http"
 	"os"
@@ -84,11 +85,18 @@ func main() {
 	}
 	defer store.Close()
 	// инициализируем работу с токенами
+	key := make([]byte, 1<<8)
+	if _, err := rand.Read(key); err != nil {
+		log.Error("Error generating token signer key", "err", err)
+		store.Close()
+		os.Exit(1)
+	}
 	tokenEngine := &TokenTemplate{
 		Template: jwt.Template{
 			Issuer:  "com.xyzrd.geotrace",
-			Expire:  time.Minute * 30,
-			Created: true,
+			Expire:  time.Minute * 30,        // срок жизни
+			Created: true,                    // добавлять время создания
+			Signer:  jwt.NewSignerHS256(key), // подпись токена
 		},
 	}
 	mux := InitAPI(store, tokenEngine) // инициализируем API
