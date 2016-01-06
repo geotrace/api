@@ -8,8 +8,7 @@ import (
 )
 
 type Store struct {
-	db     *model.DB    // хранилище
-	tokens *TokenEngine // работа с токенами
+	db *model.DB // хранилище
 }
 
 // Connect устанавливает соединение с MongoDB.
@@ -32,12 +31,9 @@ func Connect(url string) (*Store, error) {
 			return nil, err // это была последняя попытка
 		}
 	}
-	// инициализируем работу с токенами
-	tokens := NewTokenEngine(TokenIssuer, TokenExpire, nil)
 	// возвращаем инициализированное хранилище
 	return &Store{
-		db:     model.InitDB(session, di.Database),
-		tokens: tokens,
+		db: model.InitDB(session, di.Database),
 	}, nil
 }
 

@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/geotrace/jwt"
 	"github.com/geotrace/rest"
 	"gopkg.in/inconshreveable/log15.v2"
 )
@@ -19,31 +20,17 @@ var (
 	TokenExpire = time.Minute * 30      // время жизни токена
 )
 
-func main() {
-	// инициализируем параметры и окружение
-	mongoURL := flag.String("mongodb", Env("MONGODB", "mongodb://localhost/geotrace"),
-		"MongoDB connection `URL`")
-	addr := flag.String("http", Env("SERVER", ":8080"), "HTTP server `address:port`")
-	flag.Parse()
-
-	// подключаемся к MongoDB и сервисам
-	store, err := Connect(*mongoURL)
-	if err != nil {
-		log.Error("Connection error", "err", err)
-		os.Exit(1)
-	}
-	defer store.Close()
-
+func InitAPI(store *Store, token *TokenTemplate) *rest.ServeMux {
 	// определяем обработчики URL
 	var mux rest.ServeMux
 	mux.Handles(rest.Paths{
 		"user": {
-			"GET":  Basic(store.UserLogin), // авторизация пользователя
-			"POST": nil,                    // регистрация нового пользователя
+			"GET":  token.Basic(store.UserLogin), // авторизация пользователя
+			"POST": nil,                          // регистрация нового пользователя
 		},
 		"device": {
-			"GET":  Basic(store.DeviceLogin), // авторизация устройства
-			"POST": nil,                      // регистрация нового устройства
+			"GET":  token.Basic(store.DeviceLogin), // авторизация устройства
+			"POST": nil,                            // регистрация нового устройства
 		},
 		"users": {
 			"GET": nil, // отдает список пользователей в группе
@@ -52,7 +39,8 @@ func main() {
 			"GET": nil, // отдает информацию о пользователе
 		},
 		"devices": {
-			"GET": nil, // список устройств в группе
+			"GET":  nil, // список устройств в группе
+			"POST": nil,
 		},
 		"devices/:device-id": {
 			"GET":    nil, // информация об устройстве
@@ -69,8 +57,8 @@ func main() {
 			"DELETE": nil, //
 		},
 		"places": {
-			"GET":  nil, //
-			"POST": nil, //
+			"GET":  token.Token(store.GetPlaces), // отдает список мест
+			"POST": nil,                          //
 		},
 		"places/:place-id": {
 			"GET":    nil, //
@@ -79,7 +67,32 @@ func main() {
 		},
 	})
 	mux.BasePath = "/api/v1/"
-	server := http.Server{
+	return &mux
+}
+
+func main() {
+	// инициализируем параметры и окружение
+	mongoURL := flag.String("mongodb", Env("MONGODB", "mongodb://localhost/geotrace"),
+		"MongoDB connection `URL`")
+	addr := flag.String("http", Env("SERVER", ":8080"), "HTTP server `address:port`")
+	flag.Parse()
+
+	store, err := Connect(*mongoURL) // подключаемся к MongoDB
+	if err != nil {
+		log.Error("Connection error", "err", err)
+		os.Exit(1)
+	}
+	defer store.Close()
+	// инициализируем работу с токенами
+	tokenEngine := &TokenTemplate{
+		Template: jwt.Template{
+			Issuer:  "com.xyzrd.geotrace",
+			Expire:  time.Minute * 30,
+			Created: true,
+		},
+	}
+	mux := InitAPI(store, tokenEngine) // инициализируем API
+	server := http.Server{             // инициализируем HTTP-сервер
 		Addr:         *addr,
 		Handler:      mux,
 		ReadTimeout:  time.Second * 10,
