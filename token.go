@@ -11,19 +11,12 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
-type ctxType byte // тип для сохранения данных в контексте запроса
-
-var ctxToken ctxType = 1 // ключ для сохранения токенов
-
-// AccessTokenParamName описывает название параметра с токеном в запросе, если токен передается
-// не в заголовке. Если в качестве значения задать пустую строку, то система перестанет
-// поддерживать возможность передачи токена в виде параметра.
-var AccessTokenParamName = "token"
-
+// TokenTemplate описывает шаблон для генерации токена.
 type TokenTemplate struct {
 	jwt.Template // шаблон токена
 }
 
+// Token описывает основное содержимое токена.
 type Token struct {
 	Type  string `json:"type"`
 	Id    string `json:"id"`
@@ -31,24 +24,15 @@ type Token struct {
 	Name  string `json:"name,omitempty"`
 }
 
+// ErrTokenNotFound описывает ошибку, что токен в запросе не найден.
 var ErrTokenNotFound = errors.New("token not found")
 
-// ParseRequest разбирает токен из HTTP-запроса. Токен может быть передан как в заголовке
-// запроса авторизации, с типом авторизации "Bearer", так и в параметре или поле формы
-// с имененен, определеннов в глобальной переменной AccessTokenParamName.
+// ParseRequest разбирает токен из HTTP-запроса.
 func (t *TokenTemplate) ParseRequest(req *http.Request) (*Token, error) {
 	var token = new(Token)
 	if ah := req.Header.Get("Authorization"); ah != "" {
 		if len(ah) > 6 && strings.ToUpper(ah[0:6]) == "BEARER" {
 			if err := t.Parse([]byte(ah[7:]), token); err != nil {
-				return nil, err
-			}
-			return token, nil
-		}
-	}
-	if AccessTokenParamName != "" {
-		if tokStr := req.FormValue(AccessTokenParamName); tokStr != "" {
-			if err := t.Parse([]byte(tokStr), token); err != nil {
 				return nil, err
 			}
 			return token, nil
@@ -85,16 +69,13 @@ func (t *TokenTemplate) Token(h rest.Handler, allowSubs ...string) rest.Handler 
 				return
 			}
 		}
-		c.SetData(ctxToken, token) // сохраняем токен в контексте запроса
-		h(c)                       // вызываем основной обработчик запроса
+		c.SetData(ctxType(1), token) // сохраняем токен в контексте запроса
+		h(c)                         // вызываем основной обработчик запроса
 	}
 }
 
-// AuthFunc описывает функцию для авторизации.
-type AuthFunc func(login, password string) (*Token, error)
-
 // Basic осуществляет HTTP Basic авторизацию и возвращает авторизационный токен.
-func (t *TokenTemplate) Basic(auth AuthFunc) rest.Handler {
+func (t *TokenTemplate) Basic(auth func(login, password string) (*Token, error)) rest.Handler {
 	return func(c *rest.Context) {
 		login, password, ok := c.BasicAuth()
 		if !ok {
@@ -122,7 +103,9 @@ func (t *TokenTemplate) Basic(auth AuthFunc) rest.Handler {
 	}
 }
 
+type ctxType byte // тип для сохранения данных в контексте запроса
+
 // GetToken возвращает содержимое токена из контекста запроса.
 func GetToken(c *rest.Context) *Token {
-	return c.Data(ctxToken).(*Token)
+	return c.Data(ctxType(1)).(*Token)
 }

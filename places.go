@@ -9,12 +9,7 @@ import (
 )
 
 func (s *Store) GetPlaces(c *rest.Context) {
-	token := GetToken(c)
-	if token == nil {
-		c.Status(http.StatusForbidden).Send(nil)
-		return
-	}
-	places, err := (*model.Places)(s.db).List(token.Group)
+	places, err := (*model.Places)(s.db).List(GetToken(c).Group)
 	if err != nil {
 		if err == mgo.ErrNotFound {
 			c.Status(http.StatusNotFound).Send(nil)
