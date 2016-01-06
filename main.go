@@ -84,14 +84,14 @@ func main() {
 		os.Exit(1)
 	}
 	defer store.Close()
-	// инициализируем работу с токенами
-	key := make([]byte, 1<<8)
+
+	key := make([]byte, 1<<8) // создаем ключ для подписи токенов
 	if _, err := rand.Read(key); err != nil {
 		log.Error("Error generating token signer key", "err", err)
 		store.Close()
 		os.Exit(1)
 	}
-	tokenEngine := &TokenTemplate{
+	tokenEngine := &TokenTemplate{ // инициализируем работу с токенами
 		Template: jwt.Template{
 			Issuer:  "com.xyzrd.geotrace",
 			Expire:  time.Minute * 30,        // срок жизни
