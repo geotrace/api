@@ -78,17 +78,9 @@ func main() {
 	addr := flag.String("http", Env("SERVER", ":8080"), "HTTP server `address:port`")
 	flag.Parse()
 
-	store, err := Connect(*mongoURL) // подключаемся к MongoDB
-	if err != nil {
-		log.Error("Connection error", "err", err)
-		os.Exit(1)
-	}
-	defer store.Close()
-
 	key := make([]byte, 1<<8) // создаем ключ для подписи токенов
 	if _, err := rand.Read(key); err != nil {
 		log.Error("Error generating token signer key", "err", err)
-		store.Close()
 		os.Exit(1)
 	}
 	tokenEngine := &TokenTemplate{ // инициализируем работу с токенами
@@ -99,6 +91,14 @@ func main() {
 			Signer:  jwt.NewSignerHS256(key), // подпись токена
 		},
 	}
+
+	store, err := Connect(*mongoURL) // подключаемся к MongoDB
+	if err != nil {
+		log.Error("Connection error", "err", err)
+		os.Exit(1)
+	}
+	defer store.Close()
+
 	mux := InitAPI(store, tokenEngine) // инициализируем API
 	server := http.Server{             // инициализируем HTTP-сервер
 		Addr:         *addr,
