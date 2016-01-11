@@ -8,7 +8,6 @@ import (
 
 	"github.com/geotrace/jwt"
 	"github.com/geotrace/rest"
-	"gopkg.in/mgo.v2"
 )
 
 // TokenTemplate описывает шаблон для генерации токена.
@@ -41,20 +40,19 @@ func (t *TokenTemplate) ParseRequest(req *http.Request) (*Token, error) {
 	return nil, ErrTokenNotFound
 }
 
-// Token проверяет токен, считывая его из заголовка. В случае неверного токена возвращает ошибку,
-// что запрос не авторизован. Так же проверяет, что тип токена соответствует указанному в
-// параметрах, в противном случае тоже будет ошибка. Сам токен сохраняется в контексте запроса.
+// Token проверяет токен, считывая его из заголовка. В случае неверного токена
+// возвращает ошибку, что запрос не авторизован. Так же проверяет, что тип
+// токена соответствует указанному в параметрах, в противном случае тоже будет
+// ошибка. Сам токен сохраняется в контексте запроса.
 func (t *TokenTemplate) Token(h rest.Handler, allowSubs ...string) rest.Handler {
-	return func(c *rest.Context) {
+	return func(c *rest.Context) error {
 		token, err := t.ParseRequest(c.Request) // читаем токен из заголовка
 		if err == ErrTokenNotFound {            // нет токена
 			c.SetHeader("WWW-Authenticate", fmt.Sprintf("Bearer realm=%q", Realm))
-			c.Status(http.StatusUnauthorized).Send(err)
-			return
+			return c.Error(http.StatusUnauthorized)
 		}
 		if err != nil { // токен не валиден
-			c.Status(http.StatusForbidden).Send(err)
-			return
+			return rest.NewError(http.StatusForbidden, err.Error())
 		}
 		if len(allowSubs) > 0 { // проверяем тип токена на допустимость
 			var allow bool
@@ -65,41 +63,32 @@ func (t *TokenTemplate) Token(h rest.Handler, allowSubs ...string) rest.Handler 
 				}
 			}
 			if !allow { // токен не подходит под допустимый тип
-				c.Status(http.StatusForbidden).Send("unauthorized token subject")
-				return
+				return rest.NewError(http.StatusForbidden, "unauthorized token subject")
 			}
 		}
-		c.SetData(ctxType(1), token) // сохраняем токен в контексте запроса
-		h(c)                         // вызываем основной обработчик запроса
+		c.SetData(ctxType(99), token) // сохраняем токен в контексте запроса
+		return h(c)                   // вызываем основной обработчик запроса
 	}
 }
 
 // Basic осуществляет HTTP Basic авторизацию и возвращает авторизационный токен.
 func (t *TokenTemplate) Basic(auth func(login, password string) (*Token, error)) rest.Handler {
-	return func(c *rest.Context) {
+	return func(c *rest.Context) error {
 		login, password, ok := c.BasicAuth()
 		if !ok {
 			c.SetHeader("WWW-Authenticate", fmt.Sprintf("Basic realm=%q", Realm))
-			c.Status(http.StatusUnauthorized).Send(nil)
-			return
+			return c.Error(http.StatusUnauthorized)
 		}
 		token, err := auth(login, password)
 		if err != nil {
-			if err == mgo.ErrNotFound || err == ErrBadPassword {
-				c.Status(http.StatusForbidden).Send(nil)
-			} else {
-				c.Error(err)
-			}
-			return
+			return err
 		}
 		tokenData, err := t.Template.Token(token)
 		if err != nil {
-			c.Error(err)
-			return
+			return err
 		}
 		c.ContentType = "application/jwt"
-		c.Send(tokenData)
-		return
+		return c.Send(tokenData)
 	}
 }
 
@@ -107,5 +96,5 @@ type ctxType byte // тип для сохранения данных в конт
 
 // GetToken возвращает содержимое токена из контекста запроса.
 func GetToken(c *rest.Context) *Token {
-	return c.Data(ctxType(1)).(*Token)
+	return c.Data(ctxType(99)).(*Token)
 }

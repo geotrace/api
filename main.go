@@ -10,6 +10,7 @@ import (
 	"github.com/geotrace/jwt"
 	"github.com/geotrace/rest"
 	"gopkg.in/inconshreveable/log15.v2"
+	"gopkg.in/mgo.v2"
 )
 
 var (
@@ -68,7 +69,20 @@ func InitAPI(store *Store, token *TokenTemplate) *rest.ServeMux {
 		},
 	})
 	mux.BasePath = "/api/v1/"
+	mux.Errors = Errors // замена некоторых ошибок
 	return &mux
+}
+
+// Errors обрабатывает ошибки, возникшие в процессе и обработки запроса и
+// присваивает им статус. В частности, заменяет ошибку mgo.ErrNotFound и
+// присваивает ей статус http.StatusNotFound.
+func Errors(err error) *rest.Error {
+	switch err {
+	case mgo.ErrNotFound:
+		return rest.NewError(http.StatusNotFound, "")
+	default:
+		return rest.NewError(http.StatusInternalServerError, err.Error())
+	}
 }
 
 func main() {
