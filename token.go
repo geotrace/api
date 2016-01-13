@@ -48,11 +48,12 @@ func (t *TokenTemplate) Token(h rest.Handler, allowSubs ...string) rest.Handler 
 	return func(c *rest.Context) error {
 		token, err := t.ParseRequest(c.Request) // читаем токен из заголовка
 		if err == ErrTokenNotFound {            // нет токена
-			c.SetHeader("WWW-Authenticate", fmt.Sprintf("Bearer realm=%q", Realm))
-			return c.Error(http.StatusUnauthorized)
+			c.Header().Set("WWW-Authenticate",
+				fmt.Sprintf("Bearer realm=%q", Realm))
+			return c.Send(rest.ErrUnauthorized)
 		}
 		if err != nil { // токен не валиден
-			return rest.NewError(http.StatusForbidden, err.Error())
+			return c.Error(http.StatusForbidden, err.Error())
 		}
 		if len(allowSubs) > 0 { // проверяем тип токена на допустимость
 			var allow bool
@@ -63,7 +64,7 @@ func (t *TokenTemplate) Token(h rest.Handler, allowSubs ...string) rest.Handler 
 				}
 			}
 			if !allow { // токен не подходит под допустимый тип
-				return rest.NewError(http.StatusForbidden, "unauthorized token subject")
+				return c.Error(http.StatusForbidden, "unauthorized token subject")
 			}
 		}
 		c.SetData(ctxType(99), token) // сохраняем токен в контексте запроса
@@ -76,16 +77,16 @@ func (t *TokenTemplate) Basic(auth func(login, password string) (*Token, error))
 	return func(c *rest.Context) error {
 		login, password, ok := c.BasicAuth()
 		if !ok {
-			c.SetHeader("WWW-Authenticate", fmt.Sprintf("Basic realm=%q", Realm))
-			return c.Error(http.StatusUnauthorized)
+			c.Header().Set("WWW-Authenticate", fmt.Sprintf("Basic realm=%q", Realm))
+			return c.Send(rest.ErrUnauthorized)
 		}
 		token, err := auth(login, password)
 		if err != nil {
-			return err
+			return c.Error(http.StatusForbidden, err.Error())
 		}
 		tokenData, err := t.Template.Token(token)
 		if err != nil {
-			return err
+			return c.Error(http.StatusInternalServerError, err.Error())
 		}
 		c.ContentType = "application/jwt"
 		return c.Send(tokenData)

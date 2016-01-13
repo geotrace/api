@@ -10,11 +10,10 @@ import (
 	"github.com/geotrace/jwt"
 	"github.com/geotrace/rest"
 	"gopkg.in/inconshreveable/log15.v2"
-	"gopkg.in/mgo.v2"
 )
 
 var (
-	log         = log15.New()           // вывод логов
+	llog        = log15.New()           // вывод логов
 	retry       = 5                     // количество попыток подключения к сервисам
 	delay       = time.Second           // время задержки между подключениями к сервисам в случае ошибки
 	Realm       = "GeoTrace"            // используется в заголовке авторизации
@@ -27,62 +26,64 @@ func InitAPI(store *Store, token *TokenTemplate) *rest.ServeMux {
 	var mux rest.ServeMux
 	mux.Handles(rest.Paths{
 		"user": {
-			"GET":  token.Basic(store.UserLogin), // авторизация пользователя
-			"POST": nil,                          // регистрация нового пользователя
+			// авторизация пользователя
+			"GET": token.Basic(store.UserLogin),
+			// регистрация нового пользователя
+			"POST": nil,
 		},
 		"device": {
-			"GET":  token.Basic(store.DeviceLogin), // авторизация устройства
-			"POST": nil,                            // регистрация нового устройства
+			// авторизация устройства
+			"GET": token.Basic(store.DeviceLogin),
+			// регистрация нового устройства
+			"POST": nil,
 		},
 		"users": {
-			"GET": nil, // отдает список пользователей в группе
+			// отдает список пользователей в группе
+			"GET": nil,
 		},
 		"users/:user-id": {
-			"GET": nil, // отдает информацию о пользователе
+			// отдает информацию о пользователе
+			"GET": nil,
 		},
 		"devices": {
-			"GET":  nil, // список устройств в группе
+			// список устройств в группе
+			"GET":  nil,
 			"POST": nil,
 		},
 		"devices/:device-id": {
-			"GET":    nil, // информация об устройстве
-			"PUT":    nil, // изменяет устройство
-			"DELETE": nil, // удаляет
+			// информация об устройстве
+			"GET": nil,
+			// изменяет устройство
+			"PUT": nil,
+			// удаляет устройство
+			"DELETE": nil,
 		},
 		"devices/:device-id/events": {
-			"GET":  nil, //
-			"POST": nil, //
+			"GET":  nil,
+			"POST": nil,
 		},
 		"devices/:device-id/events/:event-id": {
-			"GET":    nil, //
-			"PUT":    nil, //
-			"DELETE": nil, //
+			"GET":    nil,
+			"PUT":    nil,
+			"DELETE": nil,
 		},
 		"places": {
-			"GET":  token.Token(store.GetPlaces), // отдает список мест
-			"POST": nil,                          //
+			// отдает список мест
+			"GET": token.Token(store.PlacesList),
+			// создает новое место
+			"POST": token.Token(store.PlaceAdd, "user"),
 		},
 		"places/:place-id": {
-			"GET":    nil, //
-			"PUT":    nil, //
-			"DELETE": nil, //
+			// возвращает описание места
+			"GET": token.Token(store.PlaceGet),
+			// изменение информации о месте
+			"PUT": token.Token(store.PlaceChange, "user"),
+			// удаляет место из списка группы
+			"DELETE": token.Token(store.PlaceDelete, "user"),
 		},
 	})
 	mux.BasePath = "/api/v1/"
-	mux.Errors = Errors // замена некоторых ошибок
 	return &mux
-}
-
-// Errors обрабатывает ошибки, возникшие в процессе и обработки запроса и
-// присваивает им статус. В частности, заменяет ошибку mgo.ErrNotFound и
-// присваивает ей статус http.StatusNotFound.
-func Errors(err error) *rest.Error {
-	switch err {
-	case mgo.ErrNotFound:
-		return rest.NewError(http.StatusNotFound, "")
-	default:
-		return rest.NewError(http.StatusInternalServerError, err.Error())
-	}
 }
 
 func main() {
@@ -94,7 +95,7 @@ func main() {
 
 	key := make([]byte, 1<<8) // создаем ключ для подписи токенов
 	if _, err := rand.Read(key); err != nil {
-		log.Error("Error generating token signer key", "err", err)
+		llog.Error("Error generating token signer key", "err", err)
 		os.Exit(1)
 	}
 	tokenEngine := &TokenTemplate{ // инициализируем работу с токенами
@@ -108,7 +109,7 @@ func main() {
 
 	store, err := Connect(*mongoURL) // подключаемся к MongoDB
 	if err != nil {
-		log.Error("Connection error", "err", err)
+		llog.Error("Connection error", "err", err)
 		os.Exit(1)
 	}
 	defer store.Close()
@@ -121,7 +122,7 @@ func main() {
 		WriteTimeout: time.Second * 10,
 	}
 	if err := server.ListenAndServe(); err != nil {
-		log.Error("HTTP Server error", "err", err)
+		llog.Error("HTTP Server error", "err", err)
 	}
 }
 

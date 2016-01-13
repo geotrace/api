@@ -25,11 +25,10 @@ func Connect(url string) (*Store, error) {
 		if err == nil {
 			break
 		}
-		if i < retry {
-			time.Sleep(time.Duration(i) * delay)
-		} else {
+		if i >= retry {
 			return nil, err // это была последняя попытка
 		}
+		time.Sleep(time.Duration(i) * delay)
 	}
 	// возвращаем инициализированное хранилище
 	return &Store{
