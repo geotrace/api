@@ -30,22 +30,22 @@ func TestPlaces(t *testing.T) {
 			},
 			201,
 		},
-		// {
-		// 	"Ошибка создания нового места",
-		// 	"POST",
-		// 	"places",
-		// 	rest.JSON{
-		// 		"name": "test_bad_place",
-		// 	},
-		// 	400,
-		// },
-		// {
-		// 	"Ошибка удаления несуществующего места",
-		// 	"DELETE",
-		// 	"places/bad_place",
-		// 	nil,
-		// 	404,
-		// },
+		{
+			"Ошибка создания нового места",
+			"POST",
+			"places",
+			rest.JSON{
+				"name": "test_bad_place",
+			},
+			400,
+		},
+		{
+			"Ошибка удаления несуществующего места",
+			"DELETE",
+			"places/bad_place",
+			nil,
+			404,
+		},
 	}
 
 	for _, test := range tests {
@@ -54,16 +54,16 @@ func TestPlaces(t *testing.T) {
 		}
 	}
 
-	// test := TestRequest{
-	// 	"Получение списка мест без токена",
-	// 	"GET",
-	// 	"places",
-	// 	nil,
-	// 	401,
-	// }
-	// if _, err = request(test, nil); err != nil {
-	// 	t.Error(err)
-	// }
+	test := TestRequest{
+		"Получение списка мест без токена",
+		"GET",
+		"places",
+		nil,
+		401,
+	}
+	if _, err = request(test, nil); err != nil {
+		t.Error(err)
+	}
 	resp, err := request(TestRequest{
 		"Получение списка мест",
 		"GET",

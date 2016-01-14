@@ -13,16 +13,16 @@ func TestDevices(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// test := TestRequest{
-	// 	"Получение списка устройств в группе пользователя без токена",
-	// 	"GET",
-	// 	"devices",
-	// 	nil,
-	// 	401,
-	// }
-	// if _, err = request(test, nil); err != nil {
-	// 	t.Error(err)
-	// }
+	test := TestRequest{
+		"Получение списка устройств в группе пользователя без токена",
+		"GET",
+		"devices",
+		nil,
+		401,
+	}
+	if _, err = request(test, nil); err != nil {
+		t.Error(err)
+	}
 	resp, err := request(TestRequest{
 		"Получение списка устройств в группе пользователя",
 		"GET",
