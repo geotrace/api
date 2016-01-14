@@ -4,11 +4,14 @@ import (
 	"net/http"
 
 	"github.com/geotrace/model"
-	"github.com/geotrace/rest"
+	"github.com/mdigger/rest"
 )
 
 func (s *Store) PlacesList(c *rest.Context) error {
 	places, err := (*model.Places)(s.db).List(GetToken(c).Group)
+	if err == model.ErrNotFound {
+		return c.Send(rest.ErrNotFound)
+	}
 	if err != nil {
 		return err
 	}
@@ -31,6 +34,9 @@ func (s *Store) PlaceAdd(c *rest.Context) error {
 
 func (s *Store) PlaceGet(c *rest.Context) error {
 	place, err := (*model.Places)(s.db).Get(GetToken(c).Group, c.Param("place-id"))
+	if err == model.ErrNotFound {
+		return c.Send(rest.ErrNotFound)
+	}
 	if err != nil {
 		return err
 	}
@@ -39,6 +45,9 @@ func (s *Store) PlaceGet(c *rest.Context) error {
 
 func (s *Store) PlaceDelete(c *rest.Context) error {
 	if err := (*model.Places)(s.db).Delete(GetToken(c).Group, c.Param("place-id")); err != nil {
+		if err == model.ErrNotFound {
+			return c.Send(rest.ErrNotFound)
+		}
 		return err
 	}
 	return c.Send(nil)
@@ -51,6 +60,9 @@ func (s *Store) PlaceChange(c *rest.Context) error {
 	}
 	place.ID = c.Param("place-id")
 	if err := (*model.Places)(s.db).Update(GetToken(c).Group, place); err != nil {
+		if err == model.ErrNotFound {
+			return c.Send(rest.ErrNotFound)
+		}
 		if err == model.ErrBadPlaceData {
 			return c.Error(http.StatusBadRequest, err.Error())
 		}

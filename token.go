@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/geotrace/jwt"
-	"github.com/geotrace/rest"
+	"github.com/mdigger/jwt"
+	"github.com/mdigger/rest"
 )
 
 // TokenTemplate описывает шаблон для генерации токена.
@@ -40,11 +40,11 @@ func (t *TokenTemplate) ParseRequest(req *http.Request) (*Token, error) {
 	return nil, ErrTokenNotFound
 }
 
-// Token проверяет токен, считывая его из заголовка. В случае неверного токена
-// возвращает ошибку, что запрос не авторизован. Так же проверяет, что тип
-// токена соответствует указанному в параметрах, в противном случае тоже будет
-// ошибка. Сам токен сохраняется в контексте запроса.
-func (t *TokenTemplate) Token(h rest.Handler, allowSubs ...string) rest.Handler {
+// WithToken проверяет токен, считывая его из заголовка. В случае неверного
+// токена возвращает ошибку, что запрос не авторизован. Так же проверяет, что
+// тип токена соответствует указанному в параметрах, в противном случае тоже
+// будет ошибка. Сам токен сохраняется в контексте запроса.
+func (t *TokenTemplate) WithToken(h rest.Handler, allowSubs ...string) rest.Handler {
 	return func(c *rest.Context) error {
 		token, err := t.ParseRequest(c.Request) // читаем токен из заголовка
 		if err == ErrTokenNotFound {            // нет токена

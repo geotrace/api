@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/geotrace/jwt"
-	"github.com/geotrace/rest"
+	"github.com/mdigger/jwt"
+	"github.com/mdigger/rest"
 	"gopkg.in/inconshreveable/log15.v2"
 )
 
@@ -69,17 +69,17 @@ func InitAPI(store *Store, token *TokenTemplate) *rest.ServeMux {
 		},
 		"places": {
 			// отдает список мест
-			"GET": token.Token(store.PlacesList),
+			"GET": token.WithToken(store.PlacesList),
 			// создает новое место
-			"POST": token.Token(store.PlaceAdd, "user"),
+			"POST": token.WithToken(store.PlaceAdd, "user"),
 		},
 		"places/:place-id": {
 			// возвращает описание места
-			"GET": token.Token(store.PlaceGet),
+			"GET": token.WithToken(store.PlaceGet),
 			// изменение информации о месте
-			"PUT": token.Token(store.PlaceChange, "user"),
+			"PUT": token.WithToken(store.PlaceChange, "user"),
 			// удаляет место из списка группы
-			"DELETE": token.Token(store.PlaceDelete, "user"),
+			"DELETE": token.WithToken(store.PlaceDelete, "user"),
 		},
 	})
 	mux.BasePath = "/api/v1/"

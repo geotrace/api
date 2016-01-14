@@ -19,8 +19,8 @@ import (
 	"gopkg.in/inconshreveable/log15.v2"
 	"gopkg.in/mgo.v2"
 
-	"github.com/geotrace/jwt"
 	"github.com/geotrace/model"
+	"github.com/mdigger/jwt"
 	"github.com/mdigger/rest"
 )
 
@@ -66,6 +66,7 @@ func TestMain(m *testing.M) {
 	ts := httptest.NewServer(mux)
 	// базовый путь для вызовов API
 	baseURL = ts.URL + mux.BasePath
+	// pretty.Println(mux)
 	// запускаем тесты
 	code := m.Run()
 	// удаляем базу по окончании теста
@@ -131,7 +132,7 @@ var OutResponse bool = true
 // ответ на запрос.
 func request(test TestRequest, token []byte) (*http.Response, error) {
 	if test.Name != "" {
-		fmt.Printf("## %s\n\n", test.Name)
+		fmt.Printf("## %s\n", test.Name)
 	}
 	var body io.Reader = nil
 	if test.Data != nil {
@@ -163,10 +164,28 @@ func request(test TestRequest, token []byte) (*http.Response, error) {
 		return nil, err
 	}
 	if OutResponse {
-		dump, err := httputil.DumpResponse(resp, true)
+		dump, err := httputil.DumpResponse(resp, false)
 		if err != nil {
 			return nil, err
 		}
+		data, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		resp.Body.Close()
+		resp.Body = ioutil.NopCloser(bytes.NewReader(data))
+		if len(data) > 0 {
+			var buf = bytes.NewBuffer(dump)
+			if ct := resp.Header.Get("Content-Type"); strings.Contains(ct, "application/json") {
+				if err := json.Indent(buf, data, "", "\t"); err != nil {
+					return nil, err
+				}
+			} else {
+				buf.Write(data)
+			}
+			dump = buf.Bytes()
+		}
+
 		fmt.Printf("###### Response:\n```http\n%s\n```\n", dump)
 		fmt.Println(strings.Repeat("-", 40))
 		if test.Status != resp.StatusCode {
