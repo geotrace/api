@@ -1,0 +1,92 @@
+FORMAT: 1A
+
+HOST: https://api.geotrace/v0
+
+# GeoTrace API
+
+## Пользователь
+
+
+## Места [/places]
+
+Описывает места, определенные данной группой пользователей. Это могут быть любые точки с 
+географическими координатами и радиусом, или многоугольники.
+
+Для таких мест отслеживается прибытие и убытие устройства или браслета из заданных координат.
+
+### Получение списка мест [GET]
+
++ Authenticated (Bearer)
++ Response 200 (application/json)
+
+        [
+          {
+            "id": "VpfNnjRe2VxWh6ZL",
+            "name": "test_place",
+            "circle": {
+              "center": [88.000000, 55.000000],
+              "radius": 500
+            }
+          }
+        ]
+
+### Добавление нового места [POST]
+
++ Request (application/json)
+    + Authenticated (Bearer)
+    + Body
+
+            {
+              "circle": {
+                "center": [88.000000, 55.000000],
+                "radius": 500
+              },
+              "name": "test_place"
+            }
+
++ Response 201 (application/json)
+
+        {
+          "id": "VpfNnjRe2VxWh6ZL"
+        }
+
+
+## Местo [/places/{place_id}]
+
++ Parameters
+    + place_id - идентификатор места
+
+### Получение информации о месте [GET]
+
++ Authenticated (Bearer)
++ Response 200 (application/json)
+
+        {
+          "id": "VpfNnjRe2VxWh6ZL",
+          "name": "test_place",
+          "circle": {
+            "center": [88.000000, 55.000000],
+            "radius": 500
+          }
+        }
+
+### Изменение информации о месте [PUT]
+
++ Request (application/json)
+    + Authenticated (Bearer)
+    + Body
+
+            {
+              "circle": {
+                "center": [88.000000, 55.000000],
+                "radius": 500
+              },
+              "name": "test_place"
+            }
+
++ Response 204
+
+### Удаление информации о месте [DELETE]
+
++ Authenticated (Bearer)
++ Response 204
