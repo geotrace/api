@@ -60,6 +60,60 @@ func TestMain(m *testing.M) {
 	}
 	// доступ к хранилищу данных
 	store = &Store{model.InitDB(session, di.Database)}
+
+	group := "test_group"
+
+	// создаем тестовых пользователей
+	for _, user := range []*model.User{
+		{
+			Login:    "test",
+			GroupID:  group,
+			Name:     "Test User 1",
+			Password: model.NewPassword("test"),
+		},
+		{
+			Login:    "test2",
+			GroupID:  group,
+			Name:     "Test User 2",
+			Password: model.NewPassword("test"),
+		},
+		{
+			Login:    "test3",
+			GroupID:  group,
+			Name:     "Test User 3",
+			Password: model.NewPassword("test"),
+		},
+	} {
+		if err = (*model.Users)(store.db).Create(user); err != nil && !mgo.IsDup(err) {
+			llog.Error("Error create test user", "err", err)
+			os.Exit(2)
+		}
+	}
+
+	// создаем тестовые устройства
+	for _, device := range []*model.Device{
+		{
+			ID:       "test",
+			Name:     "Test Device 1",
+			Password: model.NewPassword("test"),
+		},
+		{
+			ID:       "test2",
+			Name:     "Test Device 2",
+			Password: model.NewPassword("test"),
+		},
+		{
+			ID:       "test3",
+			Name:     "Test Device 3",
+			Password: model.NewPassword("test"),
+		},
+	} {
+		if err = (*model.Devices)(store.db).Create(group, device); err != nil && !mgo.IsDup(err) {
+			llog.Error("Error create test device", "err", err)
+			os.Exit(2)
+		}
+	}
+
 	// инициализируем API
 	mux := InitAPI(store, tokenEngine)
 	// тестовый веб-сервер
@@ -85,23 +139,32 @@ func getUserToken() (token []byte, err error) {
 	if store == nil {
 		return nil, errors.New("not connected to store")
 	}
-	// создаем тестового пользователя
-	if err = (*model.Users)(store.db).Create(&model.User{
-		Login:    "test",
-		GroupID:  "test_group",
-		Name:     "Test User",
-		Password: model.NewPassword("test"),
-	}); err != nil && !mgo.IsDup(err) {
-		return nil, err
-	}
+
+	fmt.Printf("#### %s\n", "Авторизация пользователя")
+
 	req, err := http.NewRequest("GET", baseURL+"user", nil)
 	if err != nil {
 		return nil, err
 	}
 	req.SetBasicAuth("test", "test")
+	if OutResponse {
+		dump, err := httputil.DumpRequest(req, true)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Printf("###### Request:\n```http\n%s\n```\n", dump)
+	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
+	}
+	if OutResponse {
+		dump, err := httputil.DumpResponse(resp, true)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Printf("###### Response:\n```http\n%s\n```\n", dump)
+		fmt.Print("\n", strings.Repeat("-", 40), "\n\n")
 	}
 	usertoken, err := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
@@ -187,11 +250,10 @@ func request(test TestRequest, token []byte) (*http.Response, error) {
 		}
 
 		fmt.Printf("###### Response:\n```http\n%s\n```\n", dump)
-		fmt.Println(strings.Repeat("-", 40))
 		if test.Status != resp.StatusCode {
 			fmt.Printf("**ERROR:**: status %d != %d\n", test.Status, resp.StatusCode)
 		}
-		fmt.Println()
+		fmt.Print("\n", strings.Repeat("-", 40), "\n\n")
 	}
 	if test.Status != resp.StatusCode {
 		return resp, fmt.Errorf("%q:\nstatus %d != %d", test.Name, test.Status, resp.StatusCode)

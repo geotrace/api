@@ -7,16 +7,16 @@ import (
 	"github.com/geotrace/model"
 )
 
-func TestUsers(t *testing.T) {
+func TestDevices(t *testing.T) {
 	token, err := getUserToken()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// test := TestRequest{
-	// 	"Получение списка пользователей без токена",
+	// 	"Получение списка устройств в группе пользователя без токена",
 	// 	"GET",
-	// 	"users",
+	// 	"devices",
 	// 	nil,
 	// 	401,
 	// }
@@ -24,17 +24,17 @@ func TestUsers(t *testing.T) {
 	// 	t.Error(err)
 	// }
 	resp, err := request(TestRequest{
-		"Получение списка пользователей",
+		"Получение списка устройств в группе пользователя",
 		"GET",
-		"users",
+		"devices",
 		nil,
 		200,
 	}, token)
 	if err != nil {
 		t.Error(err)
 	}
-	var users []model.User
-	if err := json.NewDecoder(resp.Body).Decode(&users); err != nil {
+	var devices []model.Device
+	if err := json.NewDecoder(resp.Body).Decode(&devices); err != nil {
 		t.Error(err)
 	}
 }

@@ -5,17 +5,17 @@ import (
 	"github.com/mdigger/rest"
 )
 
-func (s *Store) UsersList(c *rest.Context) error {
+func (s *Store) DevicesList(c *rest.Context) error {
 	token := GetToken(c)
 	if token == nil {
 		return ErrBadToken
 	}
-	users, err := (*model.Users)(s.db).List(token.Group)
+	devices, err := (*model.Devices)(s.db).List(token.Group)
 	if err == model.ErrNotFound {
 		return c.Send(rest.ErrNotFound)
 	}
 	if err != nil {
 		return err
 	}
-	return c.Send(users)
+	return c.Send(devices)
 }

@@ -43,7 +43,7 @@ func InitAPI(store *Store, token *TokenTemplate) *rest.ServeMux {
 		},
 		"devices": {
 			// список устройств в группе
-			"GET":  nil,
+			"GET":  rest.Handlers(token.GetToken("user"), store.DevicesList),
 			"POST": nil,
 		},
 		"devices/:device-id": {
