@@ -23,8 +23,10 @@ type Token struct {
 	Name  string `json:"name,omitempty"`
 }
 
-// ErrTokenNotFound описывает ошибку, что токен в запросе не найден.
-var ErrTokenNotFound = errors.New("token not found")
+var (
+	ErrTokenNotFound = errors.New("token not found")
+	ErrBadToken      = errors.New("bad token")
+)
 
 // ParseRequest разбирает токен из HTTP-запроса.
 func (t *TokenTemplate) ParseRequest(req *http.Request) (*Token, error) {
@@ -40,20 +42,22 @@ func (t *TokenTemplate) ParseRequest(req *http.Request) (*Token, error) {
 	return nil, ErrTokenNotFound
 }
 
-// WithToken проверяет токен, считывая его из заголовка. В случае неверного
+// GetToken проверяет токен, считывая его из заголовка. В случае неверного
 // токена возвращает ошибку, что запрос не авторизован. Так же проверяет, что
 // тип токена соответствует указанному в параметрах, в противном случае тоже
 // будет ошибка. Сам токен сохраняется в контексте запроса.
-func (t *TokenTemplate) WithToken(h rest.Handler, allowSubs ...string) rest.Handler {
+func (t *TokenTemplate) GetToken(allowSubs ...string) rest.Handler {
 	return func(c *rest.Context) error {
 		token, err := t.ParseRequest(c.Request) // читаем токен из заголовка
 		if err == ErrTokenNotFound {            // нет токена
 			c.Header().Set("WWW-Authenticate",
 				fmt.Sprintf("Bearer realm=%q", Realm))
-			return c.Send(rest.ErrUnauthorized)
+			c.Send(rest.ErrUnauthorized)
+			return err
 		}
 		if err != nil { // токен не валиден
-			return c.Error(http.StatusForbidden, err.Error())
+			c.Error(http.StatusForbidden, err.Error())
+			return err
 		}
 		if len(allowSubs) > 0 { // проверяем тип токена на допустимость
 			var allow bool
@@ -64,11 +68,13 @@ func (t *TokenTemplate) WithToken(h rest.Handler, allowSubs ...string) rest.Hand
 				}
 			}
 			if !allow { // токен не подходит под допустимый тип
-				return c.Error(http.StatusForbidden, "unauthorized token subject")
+				err := errors.New("unauthorized token subject")
+				c.Error(http.StatusForbidden, err.Error())
+				return err
 			}
 		}
 		c.SetData(ctxType(99), token) // сохраняем токен в контексте запроса
-		return h(c)                   // вызываем основной обработчик запроса
+		return nil
 	}
 }
 

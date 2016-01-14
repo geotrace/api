@@ -39,7 +39,7 @@ func InitAPI(store *Store, token *TokenTemplate) *rest.ServeMux {
 		},
 		"users": {
 			// отдает список пользователей в группе
-			"GET": token.WithToken(store.UsersList),
+			"GET": rest.Handlers(token.GetToken(), store.UsersList),
 		},
 		"devices": {
 			// список устройств в группе
@@ -65,20 +65,23 @@ func InitAPI(store *Store, token *TokenTemplate) *rest.ServeMux {
 		},
 		"places": {
 			// отдает список мест
-			"GET": token.WithToken(store.PlacesList),
+			"GET": rest.Handlers(token.GetToken(), store.PlacesList),
 			// создает новое место
-			"POST": token.WithToken(store.PlaceAdd, "user"),
+			"POST": rest.Handlers(token.GetToken("user"), store.PlaceAdd),
 		},
 		"places/:place-id": {
 			// возвращает описание места
-			"GET": token.WithToken(store.PlaceGet),
+			"GET": rest.Handlers(token.GetToken(), store.PlaceGet),
 			// изменение информации о месте
-			"PUT": token.WithToken(store.PlaceChange, "user"),
+			"PUT": rest.Handlers(token.GetToken("user"), store.PlaceChange),
 			// удаляет место из списка группы
-			"DELETE": token.WithToken(store.PlaceDelete, "user"),
+			"DELETE": rest.Handlers(token.GetToken("user"), store.PlaceDelete),
 		},
 	})
-	mux.BasePath = "/api/v1/"
+	mux.BasePath = "/api/v0/"
+	// mux.Headers = map[string]string{
+	// 	"Server": "GeoTrace Server",
+	// }
 	return &mux
 }
 
