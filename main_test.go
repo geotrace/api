@@ -136,7 +136,7 @@ func request(test TestRequest, token []byte) (*http.Response, error) {
 	}
 	var body io.Reader = nil
 	if test.Data != nil {
-		jdata, err := json.MarshalIndent(test.Data, "", "    ")
+		jdata, err := json.MarshalIndent(test.Data, "", "  ")
 		if err != nil {
 			return nil, err
 		}
@@ -177,7 +177,7 @@ func request(test TestRequest, token []byte) (*http.Response, error) {
 		if len(data) > 0 {
 			var buf = bytes.NewBuffer(dump)
 			if ct := resp.Header.Get("Content-Type"); strings.Contains(ct, "application/json") {
-				if err := json.Indent(buf, data, "", "    "); err != nil {
+				if err := json.Indent(buf, data, "", "  "); err != nil {
 					return nil, err
 				}
 			} else {
