@@ -91,7 +91,7 @@ func getUserToken() (token []byte, err error) {
 		GroupID:  "test_group",
 		Name:     "Test User",
 		Password: model.NewPassword("test"),
-	}); err != nil {
+	}); err != nil && !mgo.IsDup(err) {
 		return nil, err
 	}
 	req, err := http.NewRequest("GET", baseURL+"user", nil)
@@ -132,7 +132,7 @@ var OutResponse bool = true
 // ответ на запрос.
 func request(test TestRequest, token []byte) (*http.Response, error) {
 	if test.Name != "" {
-		fmt.Printf("## %s\n", test.Name)
+		fmt.Printf("#### %s\n", test.Name)
 	}
 	var body io.Reader = nil
 	if test.Data != nil {

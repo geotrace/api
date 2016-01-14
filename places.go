@@ -18,6 +18,17 @@ func (s *Store) PlacesList(c *rest.Context) error {
 	return c.Send(places)
 }
 
+func (s *Store) PlaceGet(c *rest.Context) error {
+	place, err := (*model.Places)(s.db).Get(GetToken(c).Group, c.Param("place-id"))
+	if err == model.ErrNotFound {
+		return c.Send(rest.ErrNotFound)
+	}
+	if err != nil {
+		return err
+	}
+	return c.Send(place)
+}
+
 func (s *Store) PlaceAdd(c *rest.Context) error {
 	place := new(model.Place)
 	if err := c.Bind(place); err != nil {
@@ -30,17 +41,6 @@ func (s *Store) PlaceAdd(c *rest.Context) error {
 		return err
 	}
 	return c.Status(http.StatusCreated).Send(rest.JSON{"id": place.ID})
-}
-
-func (s *Store) PlaceGet(c *rest.Context) error {
-	place, err := (*model.Places)(s.db).Get(GetToken(c).Group, c.Param("place-id"))
-	if err == model.ErrNotFound {
-		return c.Send(rest.ErrNotFound)
-	}
-	if err != nil {
-		return err
-	}
-	return c.Send(place)
 }
 
 func (s *Store) PlaceDelete(c *rest.Context) error {

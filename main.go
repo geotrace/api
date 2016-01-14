@@ -39,11 +39,7 @@ func InitAPI(store *Store, token *TokenTemplate) *rest.ServeMux {
 		},
 		"users": {
 			// отдает список пользователей в группе
-			"GET": nil,
-		},
-		"users/:user-id": {
-			// отдает информацию о пользователе
-			"GET": nil,
+			"GET": token.WithToken(store.UsersList),
 		},
 		"devices": {
 			// список устройств в группе
