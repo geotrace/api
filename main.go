@@ -9,6 +9,8 @@ import (
 
 	"github.com/mdigger/jwt"
 	"github.com/mdigger/rest"
+	_ "github.com/mdigger/rest/codex" // включаем поддержку разных форматов данных
+
 	"gopkg.in/inconshreveable/log15.v2"
 )
 
@@ -22,6 +24,31 @@ var (
 )
 
 func InitAPI(store *Store, token *TokenTemplate) *rest.ServeMux {
+	// var deviceMux ServeMux
+	// deviceMux.Handles(rest.Paths{
+	// 	"": {
+	// 		// авторизация устройства
+	// 		"GET": token.Basic(store.DeviceLogin),
+	// 		// регистрация нового устройства
+	// 		"POST": nil,
+	// 	},
+	// 	"events": {
+	// 		"GET":  nil,
+	// 		"POST": nil,
+	// 	},
+	// 	"places": {
+	// 		// отдает список мест
+	// 		"GET": rest.Handlers(token.GetToken("device"), store.PlacesList),
+	// 	},
+	// 	"users": {
+	// 		// отдает список пользователей в группе
+	// 		"GET": rest.Handlers(token.GetToken("device"), store.UsersList),
+	// 	},
+	// 	"token": {
+	// 		"GET": nil,
+	// 	},
+	// })
+	// deviceMux.BasePath = "/device"
 	// определяем обработчики URL
 	var mux rest.ServeMux
 	mux.Handles(rest.Paths{
@@ -31,19 +58,13 @@ func InitAPI(store *Store, token *TokenTemplate) *rest.ServeMux {
 			// регистрация нового пользователя
 			"POST": nil,
 		},
-		"device": {
-			// авторизация устройства
-			"GET": token.Basic(store.DeviceLogin),
-			// регистрация нового устройства
-			"POST": nil,
-		},
 		"users": {
 			// отдает список пользователей в группе
-			"GET": rest.Handlers(token.GetToken(), store.UsersList),
+			"GET": token.Get(store.UsersList, "user"),
 		},
 		"devices": {
 			// список устройств в группе
-			"GET":  rest.Handlers(token.GetToken("user"), store.DevicesList),
+			"GET":  token.Get(store.DevicesList, "user"),
 			"POST": nil,
 		},
 		"devices/:device-id": {
@@ -65,17 +86,39 @@ func InitAPI(store *Store, token *TokenTemplate) *rest.ServeMux {
 		},
 		"places": {
 			// отдает список мест
-			"GET": rest.Handlers(token.GetToken(), store.PlacesList),
+			"GET": token.Get(store.PlacesList, "user"),
 			// создает новое место
-			"POST": rest.Handlers(token.GetToken("user"), store.PlaceAdd),
+			"POST": token.Get(store.PlaceAdd, "user"),
 		},
 		"places/:place-id": {
 			// возвращает описание места
-			"GET": rest.Handlers(token.GetToken(), store.PlaceGet),
+			"GET": token.Get(store.PlaceGet, "user"),
 			// изменение информации о месте
-			"PUT": rest.Handlers(token.GetToken("user"), store.PlaceChange),
+			"PUT": token.Get(store.PlaceChange, "user"),
 			// удаляет место из списка группы
-			"DELETE": rest.Handlers(token.GetToken("user"), store.PlaceDelete),
+			"DELETE": token.Get(store.PlaceDelete, "user"),
+		},
+
+		"device": {
+			// авторизация устройства
+			"GET": token.Basic(store.DeviceLogin),
+			// регистрация нового устройства
+			"POST": nil,
+		},
+		"device/events": {
+			"GET":  nil,
+			"POST": nil,
+		},
+		"device/places": {
+			// отдает список мест
+			"GET": token.Get(store.PlacesList, "device"),
+		},
+		"device/users": {
+			// отдает список пользователей в группе
+			"GET": token.Get(store.UsersList, "device"),
+		},
+		"device/token": {
+			"GET": nil,
 		},
 	})
 	mux.BasePath = "/api/v0/"

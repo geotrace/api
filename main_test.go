@@ -22,6 +22,7 @@ import (
 	"github.com/geotrace/model"
 	"github.com/mdigger/jwt"
 	"github.com/mdigger/rest"
+	"github.com/ugorji/go/codec"
 )
 
 var store *Store
@@ -190,6 +191,12 @@ type TestRequest struct {
 }
 
 var OutResponse bool = true
+var hjson = new(codec.JsonHandle)
+
+func init() {
+	hjson.Canonical = true
+	hjson.Indent = -1
+}
 
 // request выводит в консоль запрос, делает его и потом выводит в консоль
 // ответ на запрос.
@@ -199,7 +206,8 @@ func request(test TestRequest, token []byte) (*http.Response, error) {
 	}
 	var body io.Reader = nil
 	if test.Data != nil {
-		jdata, err := json.MarshalIndent(test.Data, "", "  ")
+		var jdata []byte
+		err := codec.NewEncoderBytes(&jdata, hjson).Encode(test.Data)
 		if err != nil {
 			return nil, err
 		}
@@ -215,6 +223,7 @@ func request(test TestRequest, token []byte) (*http.Response, error) {
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
+	// req.Header.Set("Accept", "application/cbor")
 	if OutResponse {
 		dump, err := httputil.DumpRequest(req, true)
 		if err != nil {
@@ -227,28 +236,27 @@ func request(test TestRequest, token []byte) (*http.Response, error) {
 		return nil, err
 	}
 	if OutResponse {
-		dump, err := httputil.DumpResponse(resp, false)
+		dump, err := httputil.DumpResponse(resp, true)
 		if err != nil {
 			return nil, err
 		}
-		data, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-		resp.Body.Close()
-		resp.Body = ioutil.NopCloser(bytes.NewReader(data))
-		if len(data) > 0 {
-			var buf = bytes.NewBuffer(dump)
-			if ct := resp.Header.Get("Content-Type"); strings.Contains(ct, "application/json") {
-				if err := json.Indent(buf, data, "", "  "); err != nil {
-					return nil, err
-				}
-			} else {
-				buf.Write(data)
-			}
-			dump = buf.Bytes()
-		}
-
+		// data, err := ioutil.ReadAll(resp.Body)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		// resp.Body.Close()
+		// resp.Body = ioutil.NopCloser(bytes.NewReader(data))
+		// if len(data) > 0 {
+		// 	var buf = bytes.NewBuffer(dump)
+		// 	if ct := resp.Header.Get("Content-Type"); strings.Contains(ct, "application/json") {
+		// 		if err := json.Indent(buf, data, "", "  "); err != nil {
+		// 			return nil, err
+		// 		}
+		// 	} else {
+		// 		buf.Write(data)
+		// 	}
+		// 	dump = buf.Bytes()
+		// }
 		fmt.Printf("###### Response:\n```http\n%s\n```\n", dump)
 		if test.Status != resp.StatusCode {
 			fmt.Printf("**ERROR:**: status %d != %d\n", test.Status, resp.StatusCode)

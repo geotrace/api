@@ -42,22 +42,20 @@ func (t *TokenTemplate) ParseRequest(req *http.Request) (*Token, error) {
 	return nil, ErrTokenNotFound
 }
 
-// GetToken проверяет токен, считывая его из заголовка. В случае неверного
+// Get проверяет токен, считывая его из заголовка. В случае неверного
 // токена возвращает ошибку, что запрос не авторизован. Так же проверяет, что
 // тип токена соответствует указанному в параметрах, в противном случае тоже
 // будет ошибка. Сам токен сохраняется в контексте запроса.
-func (t *TokenTemplate) GetToken(allowSubs ...string) rest.Handler {
+func (t *TokenTemplate) Get(h rest.Handler, allowSubs ...string) rest.Handler {
 	return func(c *rest.Context) error {
 		token, err := t.ParseRequest(c.Request) // читаем токен из заголовка
 		if err == ErrTokenNotFound {            // нет токена
 			c.Header().Set("WWW-Authenticate",
 				fmt.Sprintf("Bearer realm=%q", Realm))
-			c.Send(rest.ErrUnauthorized)
-			return err
+			return c.Error(http.StatusUnauthorized, "authorization token required")
 		}
 		if err != nil { // токен не валиден
-			c.Error(http.StatusForbidden, err.Error())
-			return err
+			return c.Error(http.StatusForbidden, err.Error())
 		}
 		if len(allowSubs) > 0 { // проверяем тип токена на допустимость
 			var allow bool
@@ -68,13 +66,11 @@ func (t *TokenTemplate) GetToken(allowSubs ...string) rest.Handler {
 				}
 			}
 			if !allow { // токен не подходит под допустимый тип
-				err := errors.New("unauthorized token subject")
-				c.Error(http.StatusForbidden, err.Error())
-				return err
+				return c.Error(http.StatusForbidden, "unauthorized token subject")
 			}
 		}
 		c.SetData(ctxType(99), token) // сохраняем токен в контексте запроса
-		return nil
+		return h(c)
 	}
 }
 
