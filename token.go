@@ -99,5 +99,8 @@ type ctxType byte // тип для сохранения данных в конт
 
 // GetToken возвращает содержимое токена из контекста запроса.
 func GetToken(c *rest.Context) *Token {
-	return c.Data(ctxType(99)).(*Token)
+	if t, ok := c.Data(ctxType(99)).(*Token); ok {
+		return t
+	}
+	return nil
 }

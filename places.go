@@ -41,13 +41,13 @@ func (s *Store) PlaceGet(c *rest.Context) error {
 
 // PlaceAdd добавляет описание нового места в группу.
 func (s *Store) PlaceAdd(c *rest.Context) error {
-	place := new(model.Place)
-	if err := c.Bind(place); err != nil {
-		return err
-	}
 	token := GetToken(c)
 	if token == nil {
 		return ErrBadToken
+	}
+	place := new(model.Place)
+	if err := c.Bind(place); err != nil {
+		return err
 	}
 	if err := (*model.Places)(s.db).Create(token.Group, place); err != nil {
 		if err == model.ErrBadPlaceData {
@@ -75,15 +75,15 @@ func (s *Store) PlaceDelete(c *rest.Context) error {
 
 // PlaceChange изменяет описание места в группе.
 func (s *Store) PlaceChange(c *rest.Context) error {
+	token := GetToken(c)
+	if token == nil {
+		return ErrBadToken
+	}
 	place := new(model.Place)
 	if err := c.Bind(place); err != nil {
 		return err
 	}
 	place.ID = c.Param("place-id")
-	token := GetToken(c)
-	if token == nil {
-		return ErrBadToken
-	}
 	if err := (*model.Places)(s.db).Update(token.Group, place); err != nil {
 		if err == model.ErrNotFound {
 			return c.Send(rest.ErrNotFound)
