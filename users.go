@@ -5,6 +5,7 @@ import (
 	"github.com/mdigger/rest"
 )
 
+// UsersList возвращает список пользователей, которые входят в ту же группу.
 func (s *Store) UsersList(c *rest.Context) error {
 	token := GetToken(c)
 	if token == nil {

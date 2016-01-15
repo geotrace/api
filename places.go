@@ -7,6 +7,7 @@ import (
 	"github.com/mdigger/rest"
 )
 
+// PlacesList возвращает список мест, определенных для данной группы.
 func (s *Store) PlacesList(c *rest.Context) error {
 	token := GetToken(c)
 	if token == nil {
@@ -22,6 +23,7 @@ func (s *Store) PlacesList(c *rest.Context) error {
 	return c.Send(places)
 }
 
+// PlaceGet возвращает описание конкретного места в данной группе.
 func (s *Store) PlaceGet(c *rest.Context) error {
 	token := GetToken(c)
 	if token == nil {
@@ -37,6 +39,7 @@ func (s *Store) PlaceGet(c *rest.Context) error {
 	return c.Send(place)
 }
 
+// PlaceAdd добавляет описание нового места в группу.
 func (s *Store) PlaceAdd(c *rest.Context) error {
 	place := new(model.Place)
 	if err := c.Bind(place); err != nil {
@@ -55,6 +58,7 @@ func (s *Store) PlaceAdd(c *rest.Context) error {
 	return c.Status(http.StatusCreated).Send(rest.JSON{"id": place.ID})
 }
 
+// PlaceDelete удаляет описание места группы по его идентификатору.
 func (s *Store) PlaceDelete(c *rest.Context) error {
 	token := GetToken(c)
 	if token == nil {
@@ -69,6 +73,7 @@ func (s *Store) PlaceDelete(c *rest.Context) error {
 	return c.Send(nil)
 }
 
+// PlaceChange изменяет описание места в группе.
 func (s *Store) PlaceChange(c *rest.Context) error {
 	place := new(model.Place)
 	if err := c.Bind(place); err != nil {

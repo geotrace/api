@@ -23,6 +23,7 @@ var (
 	TokenExpire = time.Minute * 30      // время жизни токена
 )
 
+// InitAPI инициализирует пути и обработчики, связанные с ними.
 func InitAPI(store *Store, token *TokenTemplate) *rest.ServeMux {
 	// var deviceMux ServeMux
 	// deviceMux.Handles(rest.Paths{

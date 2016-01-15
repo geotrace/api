@@ -5,6 +5,7 @@ import (
 	"github.com/mdigger/rest"
 )
 
+// DevicesList отдает список устройств, зарегистрированных для данной группы.
 func (s *Store) DevicesList(c *rest.Context) error {
 	token := GetToken(c)
 	if token == nil {

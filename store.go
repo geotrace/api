@@ -7,6 +7,7 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
+// Store позволяет работать с функциями хранилища.
 type Store struct {
 	db *model.DB // хранилище
 }
