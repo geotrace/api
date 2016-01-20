@@ -64,7 +64,8 @@ func (s *Store) PlaceDelete(c *rest.Context) error {
 	if token == nil {
 		return ErrBadToken
 	}
-	if err := (*model.Places)(s.db).Delete(token.Group, c.Param("place-id")); err != nil {
+	if err := (*model.Places)(s.db).Delete(token.Group,
+		c.Param("place-id")); err != nil {
 		if err == model.ErrNotFound {
 			return c.Send(rest.ErrNotFound)
 		}

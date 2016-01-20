@@ -8,8 +8,9 @@ import (
 
 var ErrBadPassword = errors.New("bad password")
 
-// UserLogin читает заголовок запроса с HTTP Basic авторизацией, проверяет пользователя
-// по базе данных и отдает в ответ авторизационный ключ в формате JWT.
+// UserLogin читает заголовок запроса с HTTP Basic авторизацией, проверяет
+// пользователя по базе данных и отдает в ответ авторизационный ключ в формате
+// JWT.
 func (s *Store) UserLogin(login, password string) (*Token, error) {
 	user, err := (*model.Users)(s.db).Login(login)
 	if err != nil {
@@ -26,8 +27,9 @@ func (s *Store) UserLogin(login, password string) (*Token, error) {
 	}, nil
 }
 
-// DeviceLogin читает заголовок запроса с HTTP Basic авторизацией, проверяет устройство
-// по базе данных и отдает в ответ авторизационный ключ в формате JWT.
+// DeviceLogin читает заголовок запроса с HTTP Basic авторизацией, проверяет
+// устройство по базе данных и отдает в ответ авторизационный ключ в формате
+// JWT.
 func (s *Store) DeviceLogin(login, password string) (*Token, error) {
 	device, err := (*model.Devices)(s.db).Login(login)
 	if err != nil {

@@ -9,47 +9,28 @@ import (
 
 	"github.com/mdigger/jwt"
 	"github.com/mdigger/rest"
-	_ "github.com/mdigger/rest/codex" // включаем поддержку разных форматов данных
+	_ "github.com/mdigger/rest/codex" // включаем поддержку форматов данных
 
 	"gopkg.in/inconshreveable/log15.v2"
 )
 
 var (
-	llog        = log15.New()           // вывод логов
-	retry       = 5                     // количество попыток подключения к сервисам
-	delay       = time.Second           // время задержки между подключениями к сервисам в случае ошибки
-	Realm       = "GeoTrace"            // используется в заголовке авторизации
-	TokenIssuer = "com.xyzrd.geotracer" // автор токена
-	TokenExpire = time.Minute * 30      // время жизни токена
+	// вывод логов
+	llog = log15.New()
+	// количество попыток подключения к сервисам
+	retry = 5
+	// время задержки между подключениями к сервисам в случае ошибки
+	delay = time.Second
+	// используется в заголовке авторизации
+	Realm = "GeoTrace"
+	// автор токена
+	TokenIssuer = "com.xyzrd.geotrace"
+	// время жизни токена
+	TokenExpire = time.Hour * 24 * 3
 )
 
 // InitAPI инициализирует пути и обработчики, связанные с ними.
 func InitAPI(store *Store, token *TokenTemplate) *rest.ServeMux {
-	// var deviceMux ServeMux
-	// deviceMux.Handles(rest.Paths{
-	// 	"": {
-	// 		// авторизация устройства
-	// 		"GET": token.Basic(store.DeviceLogin),
-	// 		// регистрация нового устройства
-	// 		"POST": nil,
-	// 	},
-	// 	"events": {
-	// 		"GET":  nil,
-	// 		"POST": nil,
-	// 	},
-	// 	"places": {
-	// 		// отдает список мест
-	// 		"GET": rest.Handlers(token.GetToken("device"), store.PlacesList),
-	// 	},
-	// 	"users": {
-	// 		// отдает список пользователей в группе
-	// 		"GET": rest.Handlers(token.GetToken("device"), store.UsersList),
-	// 	},
-	// 	"token": {
-	// 		"GET": nil,
-	// 	},
-	// })
-	// deviceMux.BasePath = "/device"
 	// определяем обработчики URL
 	var mux rest.ServeMux
 	mux.Handles(rest.Paths{
@@ -131,9 +112,11 @@ func InitAPI(store *Store, token *TokenTemplate) *rest.ServeMux {
 
 func main() {
 	// инициализируем параметры и окружение
-	mongoURL := flag.String("mongodb", Env("MONGODB", "mongodb://localhost/geotrace"),
+	mongoURL := flag.String("mongodb",
+		Env("MONGODB", "mongodb://localhost/geotrace"),
 		"MongoDB connection `URL`")
-	addr := flag.String("http", Env("SERVER", ":8080"), "HTTP server `address:port`")
+	addr := flag.String("http",
+		Env("SERVER", ":8080"), "HTTP server `address:port`")
 	flag.Parse()
 
 	key := make([]byte, 1<<8) // создаем ключ для подписи токенов
@@ -169,8 +152,8 @@ func main() {
 	}
 }
 
-// Env получает значение из окружения с заданным именем. Если значение не установлено, то
-// возвращает значение, заданное по умолчанию.
+// Env получает значение из окружения с заданным именем. Если значение не
+// установлено, то возвращает значение, заданное по умолчанию.
 func Env(envKey, defaultValue string) string {
 	if value := os.Getenv(envKey); value != "" {
 		return value
